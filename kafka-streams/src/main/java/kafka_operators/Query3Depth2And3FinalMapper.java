@@ -11,7 +11,7 @@ import utils.SerializerAny;
 
 import java.io.IOException;
 
-public class Query3Depth2And3FinalMapper implements KeyValueMapper<Windowed<Long>, byte[], KeyValue<Windowed<Long>, byte[]>> {
+public class Query3Depth2And3FinalMapper implements KeyValueMapper<Windowed<Long>, byte[], KeyValue<Long, byte[]>> {
 	private ObjectMapper mapper;
 	private Jedis jedis;
 
@@ -25,7 +25,7 @@ public class Query3Depth2And3FinalMapper implements KeyValueMapper<Windowed<Long
 	 * this value from Redis
 	 */
 	@Override
-	public KeyValue<Windowed<Long>, byte[]> apply(Windowed<Long> k, byte[] v) {
+	public KeyValue<Long, byte[]> apply(Windowed<Long> k, byte[] v) {
 		CommentTupleByUser commentTupleByUser = (CommentTupleByUser) SerializerAny.deserialize(v);
 
 		if (commentTupleByUser.userId.equals(0L)) {
@@ -48,6 +48,6 @@ public class Query3Depth2And3FinalMapper implements KeyValueMapper<Windowed<Long
 		}
 
 		v = SerializerAny.serialize(commentTupleByUser);
-		return new KeyValue<>(k, v);
+		return new KeyValue<>(k.key(), v);
 	}
 }

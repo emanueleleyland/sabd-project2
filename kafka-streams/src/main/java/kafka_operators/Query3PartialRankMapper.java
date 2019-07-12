@@ -10,16 +10,16 @@ import utils.SerializerAny;
 
 import java.util.Random;
 
-public class Query3PartialRankMapper implements KeyValueMapper<Windowed<Long>, byte[], KeyValue<Windowed<Long>, byte[]>> {
+public class Query3PartialRankMapper implements KeyValueMapper<Long, byte[], KeyValue<Long, byte[]>> {
 	Random random = new Random(KafkaConfig.SEED);
 	private static Double wa = 0.3, wb = 0.7;
 
 	@Override
-	public KeyValue<Windowed<Long>, byte[]> apply(Windowed<Long> longWindowed, byte[] bytes) {
+	public KeyValue<Long, byte[]> apply(Long longWindowed, byte[] bytes) {
 		//compute, for each user, his score based on recommendation and indirect count number
 		FinalTuple tuple = (FinalTuple) SerializerAny.deserialize(bytes);
-		CommentRank commentRank = new CommentRank(longWindowed.key(), tuple.recommendations * wa + tuple.count * wb);
+		CommentRank commentRank = new CommentRank(longWindowed, tuple.recommendations * wa + tuple.count * wb);
 		//prepend a random value that will be used as key to distribute the rank computation over nodes
-		return new KeyValue<>(new Windowed<>((long) random.nextInt(KafkaConfig.PARALLELISM), longWindowed.window()), SerializerAny.serialize(commentRank));
+		return new KeyValue<>((long) random.nextInt(KafkaConfig.PARALLELISM), SerializerAny.serialize(commentRank));
 	}
 }

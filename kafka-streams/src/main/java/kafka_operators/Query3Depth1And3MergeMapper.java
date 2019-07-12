@@ -7,9 +7,9 @@ import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Windowed;
 import utils.SerializerAny;
 
-public class Query3Depth1And3MergeMapper implements KeyValueMapper<Windowed<Long>, byte[], KeyValue<Windowed<Long>, byte[]>> {
+public class Query3Depth1And3MergeMapper implements KeyValueMapper<Windowed<Long>, byte[], KeyValue<Long, byte[]>> {
 	@Override
-	public KeyValue<Windowed<Long>, byte[]> apply(Windowed<Long> longWindowed, byte[] bytes) {
+	public KeyValue<Long, byte[]> apply(Windowed<Long> longWindowed, byte[] bytes) {
 		DirectCommentTuple directCommentTuple = null;
 		Long indirectComments = null;
 		CommentTuple commentTuple = new CommentTuple(0L, 0.0, 0.0);
@@ -23,5 +23,5 @@ public class Query3Depth1And3MergeMapper implements KeyValueMapper<Windowed<Long
 			commentTuple.count = indirectComments.doubleValue();
 		}
 
-		return new KeyValue<>(longWindowed, SerializerAny.serialize(commentTuple));	}
+		return new KeyValue<>(longWindowed.key(), SerializerAny.serialize(commentTuple));	}
 }

@@ -55,7 +55,7 @@ public class Query1 {
 				//write result as string and serialize it on kafka
 				.map(new Query1RankResultMapper())
 				.to("kafka_query1_1Hour", Produced.with(Serdes.Long(), Serdes.String()));
-
+/*
 
 		KStream<Windowed<String>, Long> stream_1d = stream_1h
 				.map((stringWindowed, aLong) -> new KeyValue<>(stringWindowed.key(), aLong))
@@ -117,6 +117,6 @@ public class Query1 {
 				.map(new Query1RankResultMapper())
 				//write results on kafka
 				.to("kafka_query1_7Days", Produced.with(Serdes.Long(), Serdes.String()));
-
+*/
 	}
 }

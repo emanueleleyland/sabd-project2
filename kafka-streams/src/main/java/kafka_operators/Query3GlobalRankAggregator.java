@@ -5,10 +5,10 @@ import org.apache.kafka.streams.kstream.Aggregator;
 import org.apache.kafka.streams.kstream.Windowed;
 import utils.SerializerAny;
 
-public class Query3GlobalRankAggregator implements Aggregator<Windowed<Long>, byte[], byte[]> {
+public class Query3GlobalRankAggregator implements Aggregator<Long, byte[], byte[]> {
 	//incrementally add to the sorted global rank the incoming value
 	@Override
-	public byte[] apply(Windowed<Long> aLong, byte[] bytes, byte[] agg) {
+	public byte[] apply(Long aLong, byte[] bytes, byte[] agg) {
 		CommentRank[] comments = (CommentRank[]) SerializerAny.deserialize(agg);
 		CommentRank[] partialComments = (CommentRank[]) SerializerAny.deserialize(bytes);
 		CommentRank comment = null;

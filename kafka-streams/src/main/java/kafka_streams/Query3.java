@@ -79,29 +79,28 @@ public class Query3 {
 		//Join indirectComments Datastream with depth-2 comments
 		//Returns a datastream with fields:
 		//commentid #IndirectComments #likes userid inReplyTo
-		KStream<Windowed<Long>, byte[]> comments_2_indirect =
+		KStream<Long, byte[]> comments_2_indirect =
 				indirectStream
 						.merge(comments_2)
 						.map(new Query3Depth2And3MergeMapper())
-						.groupByKey(Grouped.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+						.groupByKey(Grouped.with(Serdes.Long(), Serdes.ByteArray()))
+						.windowedBy(days == 1L ? TimeWindows.of(Duration.ofDays(1)) : days == 7L ? new WeeklyWindow() : new MonthlyWindow())
 						.aggregate(new Query3DepthsMergeInitializer(),
-								new Query3Depth2And3MergeAggregator(),
-								Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray())).toStream()
+								new Query3Depth2And3MergeAggregator()).toStream()
 						.map(new Query3Depth2And3FinalMapper(jedis, mapper));
 
 		//commentid indirectCount #likes userid inReplyTo*/
 
-
 		//Join indirectComments Datastream with depth-1 comments
 		//Returns a datastream with fields:
 		//commentid #IndirectComments #likes userid
-		KStream<Windowed<Long>, byte[]> comments_1_indirect = indirectStream
+		KStream<Long, byte[]> comments_1_indirect = indirectStream
 				.merge(comments_1)
 				.map(new Query3Depth1And3MergeMapper())
-				.groupByKey(Grouped.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+				.groupByKey(Grouped.with(Serdes.Long(), Serdes.ByteArray()))
+				.windowedBy(days == 1L ? TimeWindows.of(Duration.ofDays(1)) : days == 7L ? new WeeklyWindow() : new MonthlyWindow())
 				.aggregate(new Query3DepthsMergeInitializer(),
-						new Query3Depth1And3MergeAggregator(),
-						Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+						new Query3Depth1And3MergeAggregator())
 				.toStream()
 				.map(new Query3Depth1And3FinalMapper(jedis, mapper));
 
@@ -109,42 +108,44 @@ public class Query3 {
 		//commentId #likes indirectCount userID
 
 		//Aggregate values of indirect count referred to a user
-		KStream<Windowed<Long>, byte[]> comment_1_final = comments_1_indirect
+		KStream<Long, byte[]> comment_1_final = comments_1_indirect
 				.merge(comments_2_indirect)
 				.map(new Query3Depth1And2MergeMapper())
-				.groupByKey(Grouped.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+				.groupByKey(Grouped.with(Serdes.Long(), Serdes.ByteArray()))
+				.windowedBy(days == 1L ? TimeWindows.of(Duration.ofDays(1)) : days == 7L ? new WeeklyWindow() : new MonthlyWindow())
 				.aggregate(new Query3DepthsMergeInitializer(),
-						new Query3Depth1And2MergeAggregator(),
-						Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
-				.toStream();
+						new Query3Depth1And2MergeAggregator())
+				.toStream()
+				.map((k, v) -> new KeyValue<>(k.key(), v));
 
 		//Join Comment1 final stream with Comment2 final stream to compute for each user his score aggregating the value
 		//of recommendation and indirect comments
-		KStream<Windowed<Long>, byte[]> aggregateStream = comment_1_final
+		KStream<Long, byte[]> aggregateStream = comment_1_final
 				.merge(comments_2_indirect)
 				.map(new Query3FinalMergeMapper())
-				.groupByKey(Grouped.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+				.groupByKey(Grouped.with(Serdes.Long(), Serdes.ByteArray()))
+				.windowedBy(days == 1L ? TimeWindows.of(Duration.ofDays(1)) : days == 7L ? new WeeklyWindow() : new MonthlyWindow())
 				.aggregate(new Query3FinalMergeInitializer(),
-						new Query3FinalMergeAggregator(),
-						Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
-				.toStream();
+						new Query3FinalMergeAggregator())
+				.toStream()
+				.map((k, v) -> new KeyValue<>(k.key(), v));;
 
 
 		aggregateStream
 				//compute score for each user
 				.map(new Query3PartialRankMapper())
 				//Split the aggregated datastream for each taskmanager and emit a partial rank with at most 10 elements every day
-				.groupByKey(Grouped.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+				.groupByKey(Grouped.with(Serdes.Long(), Serdes.ByteArray()))
+				.windowedBy(days == 1L ? TimeWindows.of(Duration.ofDays(1)) : days == 7L ? new WeeklyWindow() : new MonthlyWindow())
 				.aggregate(new Query3RankInitializer(),
-						new Query3PartialRankAggregator(),
-						Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+						new Query3PartialRankAggregator())
 				.toStream()
-				.map((k, v) -> new KeyValue<>(new Windowed<>(1L, k.window()), v))
-				.groupByKey(Grouped.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+				.map((k, v) -> new KeyValue<>(1L, v))
+				.groupByKey(Grouped.with(Serdes.Long(), Serdes.ByteArray()))
+				.windowedBy(days == 1L ? TimeWindows.of(Duration.ofDays(1)) : days == 7L ? new WeeklyWindow() : new MonthlyWindow())
 				//Compute total ranking sending all the partial ranks to one worker node
 				.aggregate(new Query3RankInitializer(),
-						new Query3GlobalRankAggregator(),
-						Materialized.with(WindowedSerdes.timeWindowedSerdeFrom(Long.class, Duration.ofDays(days).toMillis()), Serdes.ByteArray()))
+						new Query3GlobalRankAggregator())
 				.toStream()
 				.map(new Query3FinalRankMapper())
 				.to(topic, Produced.with(Serdes.Long(), Serdes.String()));

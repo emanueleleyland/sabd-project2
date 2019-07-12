@@ -14,7 +14,7 @@ public class KafkaConfig {
 	public static Integer PARALLELISM = 2;
 
 	//The input topic where the dataset is produced
-	public static String INPUT_TOPIC = "comments6";
+	public static String INPUT_TOPIC = "comments";
 
 	//Pseudo-random number generator seed
 	public static Long SEED = 1234L;

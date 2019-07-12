@@ -31,7 +31,7 @@ public class Main {
 	public static void main(String[] args) {
 
 		Properties props = new Properties();
-		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "SABD-project-22222");
+		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "SABD-project-2");
 		props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConfig.KAFKA_ADDR + ":" + KafkaConfig.KAFKA_PORT);
 		props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, JsonTimestampExtractor.class);
 		//props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, "0");
@@ -69,9 +69,9 @@ public class Main {
 				.stream(KafkaConfig.INPUT_TOPIC, Consumed.with(Serdes.String(), commentSerde, new JsonTimestampExtractor(), Topology.AutoOffsetReset.LATEST))
 				.filter((k, v) -> (v.getCreateDate() != null));
 
-		Query1.doQuery(kStream);
+		//Query1.doQuery(kStream);
 		Query2.doQuery(kStream);
-		Query3.doQuery(kStream);
+		//Query3.doQuery(kStream);
 
 
 		final Topology topology = builder.build();
@@ -82,6 +82,7 @@ public class Main {
 
 
 		Map<MetricName, ? extends Metric> a = streams.metrics();
+		//a.forEach((metricName, o) -> System.err.println(o.metricName().name()));
 		// attach shutdown handler to catch control-c
 		Runtime.getRuntime().addShutdownHook(new Thread("streams-shutdown-hook") {
 			@Override

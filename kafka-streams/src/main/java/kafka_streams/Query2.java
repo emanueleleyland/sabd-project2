@@ -44,11 +44,11 @@ public class Query2 {
 				.toStream()
 				.map((k, v) -> new KeyValue<>(k.key(), v))
 				.to("kafka_query2_1Day", Produced.with(Serdes.Integer(), Serdes.Long()));
-
+/*
 		dailyStream
 				//group by time slot number (0...12)
 				.groupByKey(Grouped.with(Serdes.Integer(), Serdes.Long()))
-				.windowedBy(TimeWindows.of(Duration.ofDays(7)))
+				.windowedBy(new WeeklyWindow())
 				//aggregate values in the same time slot every 7 days
 				.reduce(Long::sum)
 				.toStream()
@@ -58,13 +58,13 @@ public class Query2 {
 		dailyStream
 				//group by time slot number (0...12)
 				.groupByKey(Grouped.with(Serdes.Integer(), Serdes.Long()))
-				.windowedBy(TimeWindows.of(Duration.ofDays(30)))
+				.windowedBy(new MonthlyWindow())
 				//aggregate values in the same time slot every 30 days
 				.reduce(Long::sum)
 				.toStream()
 				.map((k, v) -> new KeyValue<>(k.key(), v))
 				.to("kafka_query2_1Month", Produced.with(Serdes.Integer(), Serdes.Long()));
-
+*/
 
 	}
 

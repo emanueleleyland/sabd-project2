@@ -6,9 +6,9 @@ import org.apache.kafka.streams.kstream.Aggregator;
 import org.apache.kafka.streams.kstream.Windowed;
 import utils.SerializerAny;
 
-public class Query3Depth1And3MergeAggregator implements Aggregator<Windowed<Long>, byte[], byte[]> {
+public class Query3Depth1And3MergeAggregator implements Aggregator<Long, byte[], byte[]> {
 	@Override
-	public byte[] apply(Windowed<Long> longWindowed, byte[] bytes, byte[] agg) {
+	public byte[] apply(Long longWindowed, byte[] bytes, byte[] agg) {
 		CommentTuple commentTuple = (CommentTuple) SerializerAny.deserialize(bytes);
 		CommentTupleByUser commentTupleByUser = (CommentTupleByUser) SerializerAny.deserialize(agg);
 		if (commentTuple.userId == 0L) {
